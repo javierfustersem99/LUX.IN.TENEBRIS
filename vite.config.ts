@@ -43,7 +43,7 @@ export default defineConfig(({
       port: parseInt(process.env.PORT || '8443'),
     },
   }
-})
+)
 
 type FigmaSiteConfiguration = {
   title?: string
