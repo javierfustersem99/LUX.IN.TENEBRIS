@@ -7,7 +7,7 @@ import siteConfiguration from './.figma/make/site.json'
 
 // Vite config — https://vitejs.dev/config/
 export default defineConfig(({ 
-  base: '/nombre-de-tu-repo/',
+  base: '/LUX.IN.TENEBRIS/',
   plugins: [react()], }) => {
   // .figma/make/deploy-preview passes `--mode development` for cached-preview builds.
   const emitSourcemaps = mode === 'development'
