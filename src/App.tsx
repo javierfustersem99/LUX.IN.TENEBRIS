@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, type RefObject } from 'react'
 import videoSrc from "public/videoplayback.mp4";
 
 type Scene = 'landing' | 'welcome'
@@ -130,7 +130,13 @@ function LandingPage({ onActivate, fading }: { onActivate: () => void; fading: b
   )
 }
 
-function VideoScreen({ visible }: { visible: boolean }) {
+function VideoScreen({ visible,
+  videoRef,
+}: {
+  visible: boolean
+  videoRef: RefObject<HTMLVideoElement | null>
+}) {
+  
   return (
     <div style={{
       position: 'fixed',
@@ -265,8 +271,17 @@ export default function App() {
   const [blackOverlay, setBlackOverlay] = useState(0)
   const [showWelcome, setShowWelcome] = useState(false)
   const [videoVisible, setVideoVisible] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const handleActivate = () => {
+    const video = videoRef.current
+
+    if (video) {
+      video.muted = false
+      video.volume = 1
+      video.play().catch(console.error)
+    }
+
     // 1. Landing content fades out
     setLandingFading(true)
 
@@ -311,7 +326,7 @@ export default function App() {
 
       {scene === 'landing' && <LandingPage onActivate={handleActivate} fading={landingFading} />}
       {scene === 'welcome' && showWelcome && <WelcomePage onVideoReady={() => setVideoVisible(true)} />}
-      <VideoScreen visible={videoVisible} />
+      <VideoScreen visible={videoVisible} videoRef={videoRef} />
     </div>
   )
 }
