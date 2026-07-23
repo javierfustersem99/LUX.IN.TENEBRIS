@@ -60,6 +60,37 @@ html, body, #root {
   100% { background-position:  200% 0; }
 }
 
+/* Line flow animations — dashes travel from center outward */
+@keyframes line-flow-0 {
+  from { stroke-dashoffset: 14; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes line-flow-1 {
+  from { stroke-dashoffset: 14; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes line-flow-2 {
+  from { stroke-dashoffset: 14; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes rect-rush {
+  0%   { transform: scale(0.04); opacity: 0; }
+  8%   { opacity: 0.55; }
+  78%  { opacity: 0.28; }
+  100% { transform: scale(1.6);  opacity: 0; }
+}
+
+@keyframes fog-fill {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes vignette-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.80; }
+}
+
 .fog-layer {
   position: absolute;
   border-radius: 50%;

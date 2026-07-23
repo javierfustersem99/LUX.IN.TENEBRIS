@@ -2,40 +2,86 @@ import { useState, useEffect } from 'react'
 
 type Scene = 'landing' | 'welcome'
 
-// Sequence of lines shown after the welcome title
 const LOADING_LINES = [
   'Loading experience...',
   'Calibrating the darkness...',
   'Ready for it?',
 ]
 
-function FogBackground({ rushing }: { rushing: boolean }) {
+function FogBackground() {
   return (
     <>
-      <div className="fog-layer fog-a" style={rushing ? { transform: 'scale(6)', transition: 'transform 1.6s cubic-bezier(0.4,0,1,1)', opacity: 0.9 } : undefined} />
-      <div className="fog-layer fog-b" style={rushing ? { transform: 'scale(7)', transition: 'transform 1.4s cubic-bezier(0.4,0,1,1)', opacity: 0.8 } : undefined} />
-      <div className="fog-layer fog-c" style={rushing ? { transform: 'scale(8)', transition: 'transform 1.8s cubic-bezier(0.4,0,1,1)', opacity: 1.0 } : undefined} />
-      <div className="fog-layer fog-d" style={rushing ? { transform: 'scale(5)', transition: 'transform 2.0s cubic-bezier(0.4,0,1,1)', opacity: 0.7 } : undefined} />
+      <div className="fog-layer fog-a" />
+      <div className="fog-layer fog-b" />
+      <div className="fog-layer fog-c" />
+      <div className="fog-layer fog-d" />
     </>
+  )
+}
+
+const NUM_FRAMES = 7
+const FRAME_DURATION = 0.78
+
+function TunnelTransition({ active }: { active: boolean }) {
+  if (!active) return null
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 30, overflow: 'hidden' }}>
+      {/* Fog base */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(ellipse at center, rgba(195,200,220,0.90) 0%, rgba(130,138,165,0.88) 50%, rgba(40,44,58,0.97) 100%)',
+        animation: 'fog-fill 0.55s cubic-bezier(0.4,0,0.6,1) forwards',
+      }} />
+
+      {/* Rectangular frames zooming outward */}
+      {Array.from({ length: NUM_FRAMES }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '100vw',
+            height: '100vh',
+            marginTop: '-50vh',
+            marginLeft: '-50vw',
+            border: '1px solid rgba(255,255,255,0.28)',
+            boxShadow: '0 0 12px 2px rgba(210,215,235,0.10) inset',
+            animation: `rect-rush ${FRAME_DURATION}s linear infinite`,
+            animationDelay: `${-(i * (FRAME_DURATION / NUM_FRAMES))}s`,
+            transformOrigin: 'center',
+          }}
+        />
+      ))}
+
+      {/* Dark vignette — corners stay dark to reinforce depth */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.70) 100%)',
+        animation: 'vignette-pulse 0.5s ease-in-out infinite',
+        animationDelay: '0.4s',
+      }} />
+    </div>
   )
 }
 
 function LandingPage({ onActivate, fading }: { onActivate: () => void; fading: boolean }) {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '48px',
-        opacity: fading ? 0 : 1,
-        transition: 'opacity 0.4s ease',
-        zIndex: 10,
-      }}
-    >
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '48px',
+      opacity: fading ? 0 : 1,
+      transition: 'opacity 0.35s ease',
+      zIndex: 10,
+    }}>
       <div className="landing-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
         <p style={{
           fontFamily: "'DM Sans', sans-serif",
@@ -83,26 +129,58 @@ function LandingPage({ onActivate, fading }: { onActivate: () => void; fading: b
   )
 }
 
-function WelcomePage() {
+function VideoScreen({ visible }: { visible: boolean }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 60,
+      backgroundColor: '#000',
+      opacity: visible ? 1 : 0,
+      transition: 'opacity 1.6s cubic-bezier(0.16,1,0.3,1)',
+      pointerEvents: visible ? 'all' : 'none',
+    }}>
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      >
+        {/* Reemplaza con la ruta a tu video, ej: src="/video.mp4" */}
+        <source src="/videoplayback.mp4" type="video/mp4" />
+      </video>
+    </div>
+  )
+}
+
+function WelcomePage({ onVideoReady }: { onVideoReady: () => void }) {
   const [titleVisible, setTitleVisible] = useState(false)
   const [visibleLines, setVisibleLines] = useState<number[]>([])
 
   useEffect(() => {
-    // Title fades in after a brief pause
     const t0 = setTimeout(() => setTitleVisible(true), 300)
 
-    // Loading lines appear one by one starting at 5s
-    const timers = LOADING_LINES.map((_, i) =>
-      setTimeout(() => {
-        setVisibleLines(prev => [...prev, i])
-      }, 5000 + i * 2200)
+    const lineTimers = LOADING_LINES.map((_, i) =>
+      setTimeout(() => setVisibleLines(prev => [...prev, i]), 5000 + i * 2200)
     )
+
+    // "Ready for it?" is the last line. It appears at 5000 + 2*2200 = 9400ms.
+    // 3 seconds after that → 12400ms
+    const lastLineDelay = 5000 + (LOADING_LINES.length - 1) * 2200
+    const videoTimer = setTimeout(onVideoReady, lastLineDelay + 3000)
 
     return () => {
       clearTimeout(t0)
-      timers.forEach(clearTimeout)
+      lineTimers.forEach(clearTimeout)
+      clearTimeout(videoTimer)
     }
-  }, [])
+  }, [onVideoReady])
 
   return (
     <div style={{
@@ -112,10 +190,8 @@ function WelcomePage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '0px',
       zIndex: 10,
     }}>
-      {/* Main welcome title */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -150,7 +226,6 @@ function WelcomePage() {
         </h1>
       </div>
 
-      {/* Loading lines container — holds space even when empty */}
       <div style={{
         marginTop: '72px',
         display: 'flex',
@@ -160,23 +235,20 @@ function WelcomePage() {
         minHeight: `${LOADING_LINES.length * 44}px`,
       }}>
         {LOADING_LINES.map((line, i) => (
-          <p
-            key={i}
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 300,
-              fontSize: 'clamp(12px, 1.2vw, 15px)',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              color: i === visibleLines[visibleLines.length - 1]
-                ? 'rgba(255,255,255,0.70)'
-                : 'rgba(255,255,255,0.28)',
-              margin: 0,
-              opacity: visibleLines.includes(i) ? 1 : 0,
-              transform: visibleLines.includes(i) ? 'translateY(0)' : 'translateY(12px)',
-              transition: 'opacity 1.4s cubic-bezier(0.16,1,0.3,1), transform 1.4s cubic-bezier(0.16,1,0.3,1), color 0.8s ease',
-            }}
-          >
+          <p key={i} style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 300,
+            fontSize: 'clamp(12px, 1.2vw, 15px)',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: i === visibleLines[visibleLines.length - 1]
+              ? 'rgba(255,255,255,0.70)'
+              : 'rgba(255,255,255,0.28)',
+            margin: 0,
+            opacity: visibleLines.includes(i) ? 1 : 0,
+            transform: visibleLines.includes(i) ? 'translateY(0)' : 'translateY(12px)',
+            transition: 'opacity 1.4s cubic-bezier(0.16,1,0.3,1), transform 1.4s cubic-bezier(0.16,1,0.3,1), color 0.8s ease',
+          }}>
             {line}
           </p>
         ))}
@@ -187,32 +259,31 @@ function WelcomePage() {
 
 export default function App() {
   const [scene, setScene] = useState<Scene>('landing')
-  const [rushing, setRushing] = useState(false)
   const [landingFading, setLandingFading] = useState(false)
-  // White fog rush overlay
-  const [fogOverlay, setFogOverlay] = useState(0)
-  // Final black overlay before welcome
+  const [tunnelActive, setTunnelActive] = useState(false)
   const [blackOverlay, setBlackOverlay] = useState(0)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [videoVisible, setVideoVisible] = useState(false)
 
   const handleActivate = () => {
-    // 1. Fade out landing text immediately
+    // 1. Landing content fades out
     setLandingFading(true)
-    // 2. Fog starts rushing toward camera
-    setTimeout(() => setRushing(true), 100)
-    // 3. White-fog overlay washes in as fog fills screen
-    setTimeout(() => setFogOverlay(1), 400)
-    // 4. Black closes over the white
-    setTimeout(() => setBlackOverlay(1), 1200)
-    // 5. Switch scene while black
+
+    // 2. Tunnel transition starts (fog fill + rings)
+    setTimeout(() => setTunnelActive(true), 200)
+
+    // 3. Black curtain closes over the tunnel
+    setTimeout(() => setBlackOverlay(1), 1900)
+
+    // 4. Switch scene while fully black
     setTimeout(() => {
       setScene('welcome')
+      setTunnelActive(false)
       setShowWelcome(true)
-    }, 1700)
-    // 6. Black fades out revealing welcome
-    setTimeout(() => setBlackOverlay(0), 1900)
-    // 7. Clean up fog overlay
-    setTimeout(() => setFogOverlay(0), 2000)
+    }, 2500)
+
+    // 5. Black fades out revealing welcome
+    setTimeout(() => setBlackOverlay(0), 2600)
   }
 
   return (
@@ -223,32 +294,23 @@ export default function App() {
       overflow: 'hidden',
       backgroundColor: '#030305',
     }}>
-      <FogBackground rushing={rushing} />
+      <FogBackground />
+      <TunnelTransition active={tunnelActive} />
 
-      {/* White fog rush overlay */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'radial-gradient(ellipse at center, rgba(220,225,240,0.95) 0%, rgba(180,185,210,0.85) 60%, transparent 100%)',
-        opacity: fogOverlay,
-        transition: fogOverlay === 1 ? 'opacity 0.9s cubic-bezier(0.4,0,1,1)' : 'opacity 0.4s ease',
-        pointerEvents: 'none',
-        zIndex: 30,
-      }} />
-
-      {/* Black curtain overlay */}
+      {/* Black curtain */}
       <div style={{
         position: 'fixed',
         inset: 0,
         backgroundColor: '#000',
         opacity: blackOverlay,
-        transition: blackOverlay === 1 ? 'opacity 0.6s ease' : 'opacity 0.8s ease',
+        transition: blackOverlay === 1 ? 'opacity 0.7s ease' : 'opacity 1.0s ease',
         pointerEvents: blackOverlay > 0.5 ? 'all' : 'none',
         zIndex: 40,
       }} />
 
       {scene === 'landing' && <LandingPage onActivate={handleActivate} fading={landingFading} />}
-      {scene === 'welcome' && showWelcome && <WelcomePage />}
+      {scene === 'welcome' && showWelcome && <WelcomePage onVideoReady={() => setVideoVisible(true)} />}
+      <VideoScreen visible={videoVisible} />
     </div>
   )
 }
