@@ -150,7 +150,6 @@ function VideoScreen({ visible,
       <video
         autoPlay
         loop
-        muted
         playsInline
         style={{
           width: '100%',
